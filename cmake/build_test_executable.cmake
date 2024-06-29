@@ -5,7 +5,7 @@ include(cmake/install_gtest.cmake)
 install_gtest()
 
 set(TEST_EXECUTABLE_SOURCES
-    src/main.cpp
+    gtest/src/main.cpp
     ${SOURCE_FILES}
 )
 set(TEST_EXECUTABLE_INCLUDES_PUBLIC

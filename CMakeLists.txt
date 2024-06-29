@@ -16,7 +16,7 @@ get_target_property(${s0m4b0dY_utils_lib}_INCLUDES ${s0m4b0dY_utils_lib} INCLUDE
 
 set(GTEST_EXECUTABLE ON CACHE BOOL "Build gtest executable?")
 
-set(main_lib "s0m4b0dY_parallel_algorithms_openmp")
+set(s0m4b0dY_openmp_implementation "s0m4b0dY_parallel_algorithms_openmp")
 
 set(SOURCE_FILES
 )
@@ -36,17 +36,17 @@ if (GTEST_EXECUTABLE)
     include(cmake/build_test_executable.cmake)
 endif()
 
-add_library(${main_lib} INTERFACE)
+add_library(${s0m4b0dY_openmp_implementation} INTERFACE)
 
-target_include_directories(${main_lib}
+target_include_directories(${s0m4b0dY_openmp_implementation}
     INTERFACE ${COMMON_PUBLIC_INCLUDES}
     INTERFACE ${COMMON_PRIVATE_INCLUDES}
 )
 
-target_link_libraries(${main_lib} INTERFACE ${COMMON_LIBS})
+target_link_libraries(${s0m4b0dY_openmp_implementation} INTERFACE ${COMMON_LIBS})
 
-# target_sources(${main_lib} # Header only?
+# target_sources(${s0m4b0dY_openmp_implementation} # Header only?
 #     PUBLIC ${SOURCE_FILES}
 # )
 
-target_compile_features(${main_lib} INTERFACE cxx_std_20)
+target_compile_features(${s0m4b0dY_openmp_implementation} INTERFACE cxx_std_20)
