@@ -6,13 +6,13 @@ install_gtest()
 
 set(TEST_EXECUTABLE_SOURCES
     gtest/src/main.cpp
-    ${SOURCE_FILES}
+    ${COMMON_SOURCE_FILES}
 )
 set(TEST_EXECUTABLE_INCLUDES_PUBLIC
     ${COMMON_PUBLIC_INCLUDES}
 )
 
-add_executable(${test_target} ${SOURCE_FILES})
+add_executable(${test_target} ${COMMON_SOURCE_FILES})
 
 target_sources(${test_target}
     PRIVATE ${TEST_EXECUTABLE_SOURCES}
