@@ -24,16 +24,23 @@ namespace s0m4b0dY
     const value_type init_value = 0;
     std::vector<std::pair<Iterator_t, Iterator_t>> ranges = generateRanges(begin, end, omp_get_max_threads());
     std::vector<value_type> results(ranges.size(), init_value);
-    #pragma omp parallel for
-    for (auto i = 0; i < ranges.size(); ++i)
+    try
     {
-      const auto &range = ranges[i];
-      value_type result = init_value;
-      for (auto it = range.first; it != range.second; it++)
+      #pragma omp parallel for
+      for (auto i = 0; i < ranges.size(); ++i)
       {
-        result += *it;
+        const auto &range = ranges[i];
+        value_type result = init_value;
+        for (auto it = range.first; it != range.second; it++)
+        {
+          result += *it;
+        }
+        results[i] = result;
       }
-      results[i] = result;
+    }
+    catch(const std::exception &e)
+    {
+      throw;
     }
     auto result = init_value;
     for (const auto &local_result : results)
