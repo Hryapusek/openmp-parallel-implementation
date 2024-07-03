@@ -26,33 +26,7 @@ namespace s0m4b0dY
   inline _helpers::IteratorValueType<Iterator_t>::value_type OpenMPI::reduce(Iterator_t begin, Iterator_t end)
   {
     using value_type = _helpers::IteratorValueType<Iterator_t>::value_type;
-    const value_type initValue = 0;
-    std::vector<std::pair<Iterator_t, Iterator_t>> ranges = generateRanges(begin, end, omp_get_max_threads());
-    std::vector<value_type> results(ranges.size(), initValue);
-    try
-    {
-      #pragma omp parallel for
-      for (auto i = 0; i < ranges.size(); ++i)
-      {
-        const auto &range = ranges[i];
-        value_type result = initValue;
-        for (auto it = range.first; it != range.second; it++)
-        {
-          result += *it;
-        }
-        results[i] = result;
-      }
-    }
-    catch(const std::exception &e)
-    {
-      throw;
-    }
-    auto result = initValue;
-    for (const auto &localResult : results)
-    {
-      result += localResult;
-    }
-    return result;
+    return reduce(begin, end, value_type(0));
   }
 
   template<_helpers::AddableIterator Iterator_t>
