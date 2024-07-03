@@ -3,6 +3,7 @@
 
 #include <type_traits>
 #include <vector>
+#include <optional>
 #include <omp.h>
 
 #include "CommonUtils/s0_type_traits.hpp"
@@ -34,19 +35,23 @@ namespace s0m4b0dY
   {
     using value_type = _helpers::IteratorValueType<Iterator_t>::value_type;
     std::vector<std::pair<Iterator_t, Iterator_t>> ranges = generateRanges(begin, end, omp_get_max_threads());
-    std::vector<value_type> results(ranges.size(), initValue);
+    std::vector<std::optional<value_type>> results(ranges.size(), std::nullopt);
     try
     {
       #pragma omp parallel for
       for (auto i = 0; i < ranges.size(); ++i)
       {
         const auto &range = ranges[i];
-        value_type result = 0;
-        for (auto it = range.first; it != range.second; it++)
+        auto it = range.first;
+        if (it != range.second)
         {
-          result += *it;
+          value_type result = *it++;
+          for (; it != range.second; it++)
+          {
+            result += *it;
+          }
+          results[i] = result;
         }
-        results[i] = result;
       }
     }
     catch(const std::exception &e)
@@ -54,9 +59,10 @@ namespace s0m4b0dY
       throw;
     }
     auto result = initValue;
-    for (const auto &localResult : results)
-    {
-      result += localResult;
+    for (std::optional<value_type> &localResult : results)
+    { 
+      if (localResult.has_value())
+        result += std::move(localResult).value();
     }
     return result;
   }
