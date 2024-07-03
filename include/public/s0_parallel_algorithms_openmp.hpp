@@ -27,7 +27,48 @@ namespace s0m4b0dY
   inline _helpers::IteratorValueType<Iterator_t>::value_type OpenMPI::reduce(Iterator_t begin, Iterator_t end)
   {
     using value_type = _helpers::IteratorValueType<Iterator_t>::value_type;
-    return reduce(begin, end, value_type(0));
+    std::vector<std::pair<Iterator_t, Iterator_t>> ranges = generateRanges(begin, end, omp_get_max_threads());
+    std::vector<std::optional<value_type>> results(ranges.size(), std::nullopt);
+    try
+    {
+      #pragma omp parallel for
+      for (auto i = 0; i < ranges.size(); ++i)
+      {
+        const auto &range = ranges[i];
+        auto it = range.first;
+        if (it != range.second)
+        {
+          value_type result = *it++;
+          for (; it != range.second; it++)
+          {
+            result += *it;
+          }
+          results[i] = result;
+        }
+      }
+    }
+    catch(const std::exception &e)
+    {
+      throw;
+    }
+    std::optional<value_type> result;
+    for (std::optional<value_type> &localResult : results)
+    { 
+      if (localResult.has_value())
+      {
+        if (result.has_value())
+        {
+          *result += std::move(localResult).value();
+        }
+        else
+        {
+          result = std::move(localResult).value();
+        }
+      }
+    }
+    if (not result.has_value())
+      throw std::logic_error("No values passed in reduce algorithm");
+    return *result;
   }
 
   template<_helpers::AddableIterator Iterator_t>
