@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <vector>
 #include <optional>
+#include <atomic>
 #include <omp.h>
 
 #include "CommonUtils/s0_type_traits.hpp"
@@ -21,6 +22,9 @@ namespace s0m4b0dY
 
     template <_helpers::AddableIterator Iterator_t>
     IteratorValueType<Iterator_t>::value_type reduce(Iterator_t begin, Iterator_t end, IteratorValueType<Iterator_t>::value_type initValue);
+
+    template <_helpers::AddableIterator Iterator_t, _helpers::Predicate<typename IteratorValueType<Iterator_t>::value_type> Predicate>
+    Iterator_t find_if(Iterator_t begin, Iterator_t end, Predicate &&unaryFunction);
   };
 
   template <_helpers::AddableIterator Iterator_t>
@@ -107,6 +111,46 @@ namespace s0m4b0dY
     }
     return result;
   }
+
+  template<_helpers::AddableIterator Iterator_t, _helpers::Predicate<typename _helpers::IteratorValueType<Iterator_t>::value_type> Predicate>
+  inline Iterator_t OpenMPI::find_if(Iterator_t begin, Iterator_t end, Predicate && unaryFunction)
+  {
+    using value_type = _helpers::IteratorValueType<Iterator_t>::value_type;
+    std::vector<std::pair<Iterator_t, Iterator_t>> ranges = generateRanges(begin, end, omp_get_max_threads());
+    std::vector<std::optional<Iterator_t>> results(ranges.size(), std::nullopt);
+    bool found = false;
+    try
+    {
+      #pragma omp parallel for
+      for (auto i = 0; i < ranges.size(); ++i)
+      {
+        const auto &range = ranges[i];
+        for (auto it = range.first; it != range.second; it++)
+        {
+          bool local_found = false;
+          #pragma omp atomic read
+            local_found = found;
+          if (local_found)
+            break;
+          if (unaryFunction(*it))
+          {
+            results[i] = it;
+          }
+        }
+      }
+    }
+    catch(const std::exception &e)
+    {
+      throw;
+    }
+    for (std::optional<Iterator_t> &localResult : results)
+    { 
+      if (localResult.has_value())
+        return std::move(localResult).value();
+    }
+    return end;
+  }
+
 } // namespace s0m4b0dY
 
 #endif
