@@ -7,7 +7,7 @@
 
 #include "s0_parallel_algorithms_openmp.hpp"
 
-TEST(reduceParallelAlgorithm, VectorOf500ElementsDefaultReduce)
+TEST(reduce, VectorOf500ElementsDefaultReduce)
 {
     auto range = std::ranges::views::iota(0, 500);
     std::vector<int> arr(range.begin(), range.end());
@@ -16,7 +16,7 @@ TEST(reduceParallelAlgorithm, VectorOf500ElementsDefaultReduce)
     ASSERT_EQ(result, std::reduce(arr.begin(), arr.end()));
 }
 
-TEST(reduceParallelAlgorithm, VectorOf500ElementsInitValuePassed)
+TEST(reduce, VectorOf500ElementsInitValuePassed)
 {
     auto range = std::ranges::views::iota(0, 500);
     std::vector<int> arr(range.begin(), range.end());
@@ -26,7 +26,7 @@ TEST(reduceParallelAlgorithm, VectorOf500ElementsInitValuePassed)
     ASSERT_EQ(result, initValue + std::reduce(arr.begin(), arr.end()));
 }
 
-TEST(findIfParallelAlgorithm, SearchWithLambda)
+TEST(findIf, SearchWithLambda)
 {
     auto range = std::ranges::views::iota(0, 500);
     std::vector<int> arr(range.begin(), range.end());
@@ -38,7 +38,7 @@ TEST(findIfParallelAlgorithm, SearchWithLambda)
     ASSERT_EQ(*result, searchValue);
 }
 
-TEST(findIfParallelAlgorithm, SearchWithLambdaNonExistValue)
+TEST(findIf, SearchWithLambdaNonExistValue)
 {
     auto range = std::ranges::views::iota(0, 500);
     std::vector<int> arr(range.begin(), range.end());
@@ -48,7 +48,7 @@ TEST(findIfParallelAlgorithm, SearchWithLambdaNonExistValue)
     ASSERT_EQ(result, arr.end());
 }
 
-TEST(countIfParallelAlgorithm, valueLess250Test)
+TEST(countIf, valueLess250Test)
 {
     auto range = std::ranges::views::iota(0, 500);
     std::vector<int> arr(range.begin(), range.end());
@@ -59,7 +59,7 @@ TEST(countIfParallelAlgorithm, valueLess250Test)
     ASSERT_EQ(result, std::count_if(arr.begin(), arr.end(), searchLambda));
 }
 
-TEST(countIfParallelAlgorithm, alwaysFalseTest)
+TEST(countIf, alwaysFalseTest)
 {
     auto range = std::ranges::views::iota(0, 500);
     std::vector<int> arr(range.begin(), range.end());
@@ -70,7 +70,7 @@ TEST(countIfParallelAlgorithm, alwaysFalseTest)
     ASSERT_EQ(result, 0);
 }
 
-TEST(countIfParallelAlgorithm, alwaysTrueTest)
+TEST(countIf, alwaysTrueTest)
 {
     auto range = std::ranges::views::iota(0, 500);
     std::vector<int> arr(range.begin(), range.end());
@@ -81,7 +81,7 @@ TEST(countIfParallelAlgorithm, alwaysTrueTest)
     ASSERT_EQ(result, arr.size());
 }
 
-TEST(transformParallelAlgorithm, increaseBy500)
+TEST(transform, increaseBy500)
 {
     auto range = std::ranges::views::iota(0, 500);
     std::vector<int> arr(range.begin(), range.end());
@@ -96,7 +96,7 @@ TEST(transformParallelAlgorithm, increaseBy500)
     ASSERT_TRUE(result);
 }
 
-TEST(transformNonBackInserterParallelAlgorithm, increaseBy500)
+TEST(transformNonBackInserter, increaseBy500)
 {
     auto range = std::ranges::views::iota(0, 500);
     std::vector<int> arr(range.begin(), range.end());
@@ -108,5 +108,35 @@ TEST(transformNonBackInserterParallelAlgorithm, increaseBy500)
     int initValue = 200;
     openMPI.transform_non_back_inserter(arr.begin(), arr.end(), outputArr.begin(), increaseBy500);
     auto result = std::equal(outputArr.begin(), outputArr.end(), expectedArr.begin(), expectedArr.end());
+    ASSERT_TRUE(result);
+}
+
+TEST(transformSecondOverload_adder, increaseBy500)
+{
+    auto range1 = std::ranges::views::iota(0, 500);
+    auto range2 = std::ranges::views::iota(500, 1000);
+    std::vector<int> arr1(range1.begin(), range1.end());
+    std::vector<int> arr2(range2.begin(), range2.end());
+    std::vector<int> outputArr;
+    std::vector<int> expectedArr;
+    std::transform(arr1.begin(), arr1.end(), arr2.begin(), std::back_inserter(expectedArr), std::plus());
+    s0m4b0dY::OpenMPI openMPI;
+    openMPI.transform(arr1.begin(), arr1.end(), arr2.begin(), std::back_inserter(outputArr), std::plus());
+    auto result = std::equal(outputArr.begin(), outputArr.end(), outputArr.begin(), outputArr.end());
+    ASSERT_TRUE(result);
+}
+
+TEST(transformSecondOverloadNonBackInserter, increaseBy500)
+{
+    auto range1 = std::ranges::views::iota(0, 500);
+    auto range2 = std::ranges::views::iota(500, 1000);
+    std::vector<int> arr1(range1.begin(), range1.end());
+    std::vector<int> arr2(range2.begin(), range2.end());
+    std::vector<int> outputArr(arr1.size());
+    std::vector<int> expectedArr;
+    std::transform(arr1.begin(), arr1.end(), arr2.begin(), std::back_inserter(expectedArr), std::plus());
+    s0m4b0dY::OpenMPI openMPI;
+    openMPI.transform_non_back_inserter(arr1.begin(), arr1.end(), arr2.begin(), outputArr.begin(), std::plus());
+    auto result = std::equal(outputArr.begin(), outputArr.end(), outputArr.begin(), outputArr.end());
     ASSERT_TRUE(result);
 }

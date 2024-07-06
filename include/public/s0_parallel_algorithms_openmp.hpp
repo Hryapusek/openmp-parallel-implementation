@@ -67,7 +67,7 @@ namespace s0m4b0dY
                                               >
                                       >
               >
-    void transform(InputIterator1_t begin1, InputIterator1_t end1, InputIterator2_t begin2, OutputIterator_t output, BinaryFunction &&unaryFunction);
+    void transform(InputIterator1_t begin1, InputIterator1_t end1, InputIterator2_t begin2, OutputIterator_t output, BinaryFunction &&binaryFunction);
 
     /**
      * @note You should not use it if OutputIterator_t is back_inserter.
@@ -83,7 +83,7 @@ namespace s0m4b0dY
                                               >
                                       >
               >
-    void transform_non_back_inserter(InputIterator1_t begin1, InputIterator1_t end1, InputIterator2_t begin2, OutputIterator_t output, BinaryFunction &&unaryFunction);
+    void transform_non_back_inserter(InputIterator1_t begin1, InputIterator1_t end1, InputIterator2_t begin2, OutputIterator_t output, BinaryFunction &&binaryFunction);
   };
 
   template <_helpers::AddableIterator Iterator_t>
@@ -247,7 +247,7 @@ namespace s0m4b0dY
   {
     using InputValue_t = ::_helpers::IteratorValueType<InputIterator_t>::value_type;
     using UnaryFunctionReturn_t = std::invoke_result_t<UnaryFunction, InputValue_t>;
-    std::vector<std::pair<InputIterator_t, InputIterator_t>> ranges = generateRanges(begin, end, std::thread::hardware_concurrency());
+    std::vector<std::pair<InputIterator_t, InputIterator_t>> ranges = generateRanges(begin, end, omp_get_max_threads());
     std::vector<std::vector<UnaryFunctionReturn_t>> results(ranges.size());
     try
     {
@@ -284,8 +284,7 @@ namespace s0m4b0dY
   template <class InputIterator_t, class OutputIterator_t, class UnaryFunction, class>
   inline void OpenMPI::transform_non_back_inserter(InputIterator_t begin, InputIterator_t end, OutputIterator_t output, UnaryFunction &&unaryFunction)
   {
-    using OutputIteratorValue_t = _helpers::IteratorValueType<OutputIterator_t>::value_type;
-    std::vector<std::pair<InputIterator_t, InputIterator_t>> ranges = generateRanges(begin, end, std::thread::hardware_concurrency());
+    std::vector<std::pair<InputIterator_t, InputIterator_t>> ranges = generateRanges(begin, end, omp_get_max_threads());
     try
     {
       #pragma omp parallel for
@@ -297,6 +296,74 @@ namespace s0m4b0dY
         for (auto it = range.first; it != range.second; it++)
         {
           *localOutput++ = unaryFunction(*it);
+        }
+      }
+    }
+    catch(const std::exception &e)
+    {
+      throw;
+    }
+  }
+
+  template <class InputIterator1_t, class InputIterator2_t, class OutputIterator_t, class BinaryFunction, class>
+  inline void OpenMPI::transform(InputIterator1_t begin1, InputIterator1_t end1, InputIterator2_t begin2, OutputIterator_t output, BinaryFunction &&binaryFunction)
+  {
+    using InputValue1_t = ::_helpers::IteratorValueType<InputIterator1_t>::value_type;
+    using InputValue2_t = ::_helpers::IteratorValueType<InputIterator2_t>::value_type;
+    using BinaryFunctionReturn_t = std::invoke_result_t<BinaryFunction, InputValue1_t, InputValue2_t>;
+    std::vector<std::pair<InputIterator1_t, InputIterator1_t>> ranges = generateRanges(begin1, end1, omp_get_max_threads());
+    std::vector<std::vector<BinaryFunctionReturn_t>> results(ranges.size());
+    try
+    {
+      #pragma omp parallel for
+      for (auto i = 0; i < ranges.size(); ++i)
+      {
+        const auto &range = ranges[i];
+        auto localBegin2 = begin2;
+        std::advance(localBegin2, std::distance(range.first, begin1));
+        for (auto it = range.first; it != range.second; it++, localBegin2++)
+        {
+          results[i].push_back(binaryFunction(*it, *localBegin2));
+        }
+      }
+    }
+    catch(const std::exception &e)
+    {
+      throw;
+    }
+    for (auto &localResult : results)
+    {
+      for (auto &value : localResult)
+      {
+        if constexpr (std::is_move_assignable_v<BinaryFunctionReturn_t>)
+        {
+          *output++ = std::move(value);
+        }
+        else
+        {
+          *output++ = value;
+        }
+      }
+    }
+  }
+
+  template <class InputIterator1_t, class InputIterator2_t, class OutputIterator_t, class BinaryFunction, class>
+  inline void OpenMPI::transform_non_back_inserter(InputIterator1_t begin1, InputIterator1_t end1, InputIterator2_t begin2, OutputIterator_t output, BinaryFunction &&binaryFunction)
+  {
+    std::vector<std::pair<InputIterator1_t, InputIterator1_t>> ranges = generateRanges(begin1, end1, omp_get_max_threads());
+    try
+    {
+      #pragma omp parallel for
+      for (auto i = 0; i < ranges.size(); ++i)
+      {
+        const auto &range = ranges[i];
+        auto localOutput = output;
+        auto localBegin2 = begin2;
+        std::advance(localBegin2, range.first - begin1);
+        std::advance(localOutput, range.first - begin1);
+        for (auto it = range.first; it != range.second; it++, localBegin2++)
+        {
+          *localOutput++ = binaryFunction(*it, *localBegin2);
         }
       }
     }
