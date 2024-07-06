@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
 
 #include <ranges>
 #include <vector>
@@ -31,10 +32,10 @@ TEST(findIfParallelAlgorithm, SearchWithLambda)
     std::vector<int> arr(range.begin(), range.end());
     s0m4b0dY::OpenMPI openMPI;
     int initValue = 200;
-    constexpr int searchVaule = 420;
-    auto result = openMPI.find_if(arr.begin(), arr.end(), [](int value){return value == searchVaule;});
+    constexpr int searchValue = 420;
+    auto result = openMPI.find_if(arr.begin(), arr.end(), [](int value){return value == searchValue;});
     ASSERT_NE(result, arr.end());
-    ASSERT_EQ(*result, searchVaule);
+    ASSERT_EQ(*result, searchValue);
 }
 
 TEST(findIfParallelAlgorithm, SearchWithLambdaNonExistValue)
@@ -45,4 +46,67 @@ TEST(findIfParallelAlgorithm, SearchWithLambdaNonExistValue)
     int initValue = 200;
     auto result = openMPI.find_if(arr.begin(), arr.end(), [](int value){return false;});
     ASSERT_EQ(result, arr.end());
+}
+
+TEST(countIfParallelAlgorithm, valueLess250Test)
+{
+    auto range = std::ranges::views::iota(0, 500);
+    std::vector<int> arr(range.begin(), range.end());
+    s0m4b0dY::OpenMPI openMPI;
+    int initValue = 200;
+    auto searchLambda = [](int value){return value < 250;};
+    auto result = openMPI.count_if(arr.begin(), arr.end(), searchLambda);
+    ASSERT_EQ(result, std::count_if(arr.begin(), arr.end(), searchLambda));
+}
+
+TEST(countIfParallelAlgorithm, alwaysFalseTest)
+{
+    auto range = std::ranges::views::iota(0, 500);
+    std::vector<int> arr(range.begin(), range.end());
+    s0m4b0dY::OpenMPI openMPI;
+    int initValue = 200;
+    auto searchLambda = [](int value){return false;};
+    auto result = openMPI.count_if(arr.begin(), arr.end(), searchLambda);
+    ASSERT_EQ(result, 0);
+}
+
+TEST(countIfParallelAlgorithm, alwaysTrueTest)
+{
+    auto range = std::ranges::views::iota(0, 500);
+    std::vector<int> arr(range.begin(), range.end());
+    s0m4b0dY::OpenMPI openMPI;
+    int initValue = 200;
+    auto searchLambda = [](int value){return true;};
+    auto result = openMPI.count_if(arr.begin(), arr.end(), searchLambda);
+    ASSERT_EQ(result, arr.size());
+}
+
+TEST(transformParallelAlgorithm, increaseBy500)
+{
+    auto range = std::ranges::views::iota(0, 500);
+    std::vector<int> arr(range.begin(), range.end());
+    std::vector<int> outputArr;
+    std::vector<int> expectedArr;
+    auto increaseBy500 = [](auto value){return value+500;};
+    std::transform(arr.begin(), arr.end(), std::back_inserter(expectedArr), increaseBy500);
+    s0m4b0dY::OpenMPI openMPI;
+    int initValue = 200;
+    openMPI.transform(arr.begin(), arr.end(), std::back_inserter(outputArr), increaseBy500);
+    auto result = std::equal(outputArr.begin(), outputArr.end(), expectedArr.begin(), expectedArr.end());
+    ASSERT_TRUE(result);
+}
+
+TEST(transformNonBackInserterParallelAlgorithm, increaseBy500)
+{
+    auto range = std::ranges::views::iota(0, 500);
+    std::vector<int> arr(range.begin(), range.end());
+    std::vector<int> outputArr(arr.size(), 0);
+    std::vector<int> expectedArr;
+    auto increaseBy500 = [](auto value){return value+500;};
+    std::transform(arr.begin(), arr.end(), std::back_inserter(expectedArr), increaseBy500);
+    s0m4b0dY::OpenMPI openMPI;
+    int initValue = 200;
+    openMPI.transform_non_back_inserter(arr.begin(), arr.end(), outputArr.begin(), increaseBy500);
+    auto result = std::equal(outputArr.begin(), outputArr.end(), expectedArr.begin(), expectedArr.end());
+    ASSERT_TRUE(result);
 }
