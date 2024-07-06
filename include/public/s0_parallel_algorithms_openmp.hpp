@@ -25,6 +25,28 @@ namespace s0m4b0dY
 
     template <_helpers::AddableIterator Iterator_t, _helpers::Predicate<typename IteratorValueType<Iterator_t>::value_type> Predicate>
     Iterator_t find_if(Iterator_t begin, Iterator_t end, Predicate &&unaryFunction);
+
+    template <class Iterator_t, _helpers::Predicate<typename IteratorValueType<Iterator_t>::value_type> Predicate>
+    long long count_if(Iterator_t begin, Iterator_t end, Predicate &&unaryFunction);
+
+    template <class InputIterator_t, class OutputIterator_t, class UnaryFunction,
+    class = std::enable_if_t<std::is_convertible_v<decltype(std::declval<UnaryFunction>()(std::declval<IteratorValueType<InputIterator_t>::value_type>())), typename IteratorValueType<OutputIterator_t>::value_type>>>
+    void transform(InputIterator_t begin, InputIterator_t end, OutputIterator_t output, UnaryFunction &&unaryFunction);
+    
+    template <class InputIterator1_t, class InputIterator2_t, class OutputIterator_t, class BinaryFunction,
+    class = std::enable_if_t<
+                  std::is_convertible_v<
+                          decltype(std::declval<BinaryFunction>()
+                                          (
+                                            std::declval<IteratorValueType<InputIterator1_t>::value_type>(), 
+                                            std::declval<IteratorValueType<InputIterator2_t>::value_type>()
+                                          )
+                                  ),
+                                  typename IteratorValueType<OutputIterator_t>::value_type
+                                       >
+                            >
+              >
+    void transform(InputIterator1_t begin1, InputIterator1_t end1, InputIterator2_t begin2, OutputIterator_t output, BinaryFunction &&unaryFunction);
   };
 
   template <_helpers::AddableIterator Iterator_t>
@@ -135,6 +157,8 @@ namespace s0m4b0dY
           if (unaryFunction(*it))
           {
             results[i] = it;
+            #pragma omp atomic write
+            found = true;
           }
         }
       }
