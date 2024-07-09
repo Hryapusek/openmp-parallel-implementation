@@ -409,11 +409,13 @@ namespace s0m4b0dY
       auto foundIt = popValues.find(*correctHash);
       if (foundIt != popValues.end())
       {
-        *src_it = foundIt->second;
+        *src_it = std::move(foundIt->second);
+        popValues.erase(foundIt);
       }
       else
       {
         *src_it = std::move(*hashTable[*correctHash]);
+        hashTable.erase(*correctHash);
       }
     }
   }
