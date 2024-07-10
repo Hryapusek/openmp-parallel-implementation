@@ -397,14 +397,14 @@ namespace s0m4b0dY
     auto [hashValues, hashTable] = hash_sequence< InputIterator_t, hash_t, value_type >(begin, end, hashFunction, comparator);
 
     // Sort first half in ascending order
-    std::sort(std::execution::par_unseq, hashValues.begin(), hashValues.begin() + length, // FIXME: length must be divided by 2
+    std::sort(std::execution::par_unseq, hashValues.begin(), hashValues.begin() + length / 2,
     [&hashTable, &comparator](hash_t lhs, hash_t rhs)
     {
       return comparator(*hashTable.find(lhs)->second, *hashTable.find(rhs)->second);
     });
 
     // Sort second half in descending order
-    std::sort(std::execution::par_unseq, hashValues.begin() + length, hashValues.end(), 
+    std::sort(std::execution::par_unseq, hashValues.begin() + length / 2, hashValues.end(), 
     [&hashTable, &comparator](hash_t lhs, hash_t rhs)
     {
       return not comparator(*hashTable.find(lhs)->second, *hashTable.find(rhs)->second);
