@@ -438,13 +438,17 @@ namespace s0m4b0dY
       #pragma parallel for
       for (size_type i = 1; i < hashValues.size(); i += 2)
       {
-        swapCount += static_cast<size_type>(inplaceComparator(hashValues[i-1], hashValues[i]));
+        auto result = static_cast<size_type>(inplaceComparator(hashValues[i-1], hashValues[i]));
+        #pragma omp atomic
+        swapCount += result;
       }
 
       #pragma parallel for
       for (size_type i = 2; i < hashValues.size(); i += 2)
       {
-        swapCount += static_cast<size_type>(inplaceComparator(hashValues[i-1], hashValues[i]));
+        auto result = static_cast<size_type>(inplaceComparator(hashValues[i-1], hashValues[i]));
+        #pragma omp atomic
+        swapCount += result;
       }
     } while (swapCount > 0);
     
